@@ -4,7 +4,7 @@
    (toujours a jour), et depuis le cache quand il n'y a pas de reseau
    (ex : au supermarche). Les appels vers l'API GitHub passent au travers. */
 
-const CACHE = "idees-repas-v2";
+const CACHE = "idees-repas-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -34,7 +34,10 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // ne pas intercepter l'API GitHub
   e.respondWith(
-    fetch(e.request).then(res => {
+    // "no-cache" : revalide systematiquement avec le serveur (les 304 sont
+    // peu couteux) - sinon le cache HTTP de GitHub Pages (10 min) sert des
+    // vieux fichiers apres une mise a jour.
+    fetch(e.request, { cache: "no-cache" }).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return res;
