@@ -350,6 +350,38 @@ function renderAll(todayK) {
   renderForm();
 }
 
+/* ==================== THEME ==================== */
+
+const THEME_KEY = "idees-repas.theme";
+const THEME_ORDER = ["auto", "dark", "light"];
+const THEME_LABELS = { auto: "Auto", dark: "Sombre", light: "Clair" };
+
+function themePref() {
+  return localStorage.getItem(THEME_KEY) || "auto";
+}
+function isDarkNow() {
+  const p = themePref();
+  if (p !== "auto") return p === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function applyTheme() {
+  const p = themePref();
+  if (p === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", p);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", isDarkNow() ? "#171513" : "#2e7d5b");
+  $("#themeBtn").textContent = "Thème : " + THEME_LABELS[p];
+}
+
+$("#themeBtn").onclick = () => {
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(themePref()) + 1) % THEME_ORDER.length];
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme();
+};
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (themePref() === "auto") applyTheme();
+});
+
 /* ==================== EVENEMENTS ==================== */
 
 document.querySelectorAll("nav button").forEach(btn => {
@@ -509,6 +541,7 @@ const linkCfg = setupFromLink();
 Sync.init().then(async () => {
   renderAll(todayKey());
   fillSyncForm();
+  applyTheme();
   if (linkCfg && confirm("Configurer la synchronisation sur cet appareil ?")) {
     const r = await Sync.configure(linkCfg);
     if (r.ok) renderAll(todayKey());

@@ -4,7 +4,7 @@
    (toujours a jour), et depuis le cache quand il n'y a pas de reseau
    (ex : au supermarche). Les appels vers l'API GitHub passent au travers. */
 
-const CACHE = "idees-repas-v1";
+const CACHE = "idees-repas-v2";
 const ASSETS = [
   "./",
   "./index.html",
