@@ -199,8 +199,10 @@ function mealCard(m, todayK) {
         '<textarea class="comment-input" placeholder="Remarque, idée, question…"></textarea>' +
         '<div class="c-actions">' +
           '<button class="btn ghost" data-act="csave">Enregistrer</button>' +
-          '<button class="btn ghost" data-act="ccopy">Copier pour relecture IA</button>' +
+          '<button class="btn ghost" data-act="creview">Review IA</button>' +
+          '<button class="btn ghost" data-act="ccopy">Copier</button>' +
         "</div>" +
+        '<div class="ai-box"></div>' +
       "</div>" +
     "</details>" +
     '<div class="actions">' +
@@ -229,13 +231,30 @@ function mealCard(m, todayK) {
       if (v) m.comment = v; else delete m.comment;
       save();
       renderAll(todayK);
+    } else if (btn.dataset.act === "creview") {
+      if (btn.dataset.busy) return;
+      btn.dataset.busy = "1";
+      btn.textContent = "Analyse…";
+      const v = div.querySelector(".comment-input").value.trim();
+      if (v && v !== (m.comment || "")) { m.comment = v; save(); }
+      const target = v ? m : Object.assign({}, m, { comment: v });
+      const box = div.querySelector(".ai-box");
+      box.textContent = "";
+      aiReview(buildReviewPrompt(target)).then(
+        t => { box.textContent = t; btn.textContent = "Review IA"; delete btn.dataset.busy; },
+        err => {
+          box.textContent = "Erreur : " + err.message;
+          btn.textContent = "Review IA";
+          delete btn.dataset.busy;
+        }
+      );
     } else if (btn.dataset.act === "ccopy") {
       const v = div.querySelector(".comment-input").value.trim();
       const target = v ? Object.assign({}, m, { comment: v }) : m;
       navigator.clipboard.writeText(buildReviewPrompt(target)).then(
         () => {
           btn.textContent = "Copié !";
-          setTimeout(() => { btn.textContent = "Copier pour relecture IA"; }, 2000);
+          setTimeout(() => { btn.textContent = "Copier"; }, 2000);
         },
         () => alert("Copie impossible dans ce contexte (ouvre l'app via son adresse web).")
       );
@@ -403,6 +422,100 @@ function renderAll(todayK) {
   renderComments();
   renderForm();
 }
+
+/* ==================== RELECTURE IA ==================== */
+
+const AI_KEY = "idees-repas.ai";
+const AI_DEFAULT_URL = "https://api.mistral.ai/v1";
+const AI_DEFAULT_MODEL = "mistral-small-latest";
+const AI_SYSTEM = "Tu es un assistant culinaire végétarien. Réponds en français, "
+  + "de façon concise (150 mots maximum), en listant tes suggestions avec des tirets. "
+  + "Tiens compte du commentaire de la personne : c'est son ressenti qui compte.";
+
+function aiCfg() {
+  try { return JSON.parse(localStorage.getItem(AI_KEY)) || null; } catch (e) { return null; }
+}
+function aiConfigured() {
+  const c = aiCfg();
+  return !!(c && c.key);
+}
+
+// Appel a une API compatible OpenAI (par defaut : Mistral).
+async function aiReview(prompt) {
+  const c = aiCfg();
+  if (!c || !c.key) throw new Error("Pas de clé IA configurée (Historique > Relecture IA).");
+  let res;
+  try {
+    res = await fetch((c.url || AI_DEFAULT_URL) + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + c.key },
+      body: JSON.stringify({
+        model: c.model || AI_DEFAULT_MODEL,
+        messages: [
+          { role: "system", content: AI_SYSTEM },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 500
+      })
+    });
+  } catch (e) {
+    throw new Error("Impossible de joindre l'API (réseau, CORS ou point d'accès).");
+  }
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = await res.json();
+      detail = (j.error && j.error.message) ? " : " + j.error.message : "";
+    } catch (e) {}
+    if (res.status === 401) throw new Error("Clé API invalide ou expirée (401).");
+    if (res.status === 429) throw new Error("Limite d'appels ou quota atteint (429).");
+    if (res.status === 404) throw new Error("Modèle ou point d'accès introuvable (404)" + detail);
+    throw new Error("Erreur API " + res.status + detail);
+  }
+  const j = await res.json();
+  const text = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+  if (!text) throw new Error("Réponse vide de l'API.");
+  return text.trim();
+}
+
+function updateAiStatus(msg) {
+  $("#aiStatus").textContent = msg;
+}
+function fillAiForm() {
+  const c = aiCfg();
+  $("#ai-url").value = (c && c.url) || "";
+  $("#ai-model").value = (c && c.model) || "";
+  updateAiStatus(aiConfigured()
+    ? "Une clé IA est enregistrée sur cet appareil."
+    : "Aucune clé enregistrée.");
+}
+
+$("#aiSave").onclick = () => {
+  const key = $("#ai-key").value.trim();
+  const prev = aiCfg() || {};
+  if (!key && !prev.key) { alert("Entre une clé API."); return; }
+  localStorage.setItem(AI_KEY, JSON.stringify({
+    key: key || prev.key,
+    url: $("#ai-url").value.trim() || AI_DEFAULT_URL,
+    model: $("#ai-model").value.trim() || AI_DEFAULT_MODEL
+  }));
+  $("#ai-key").value = "";
+  fillAiForm();
+  updateAiStatus("Clé enregistrée (stockée uniquement dans ce navigateur).");
+};
+$("#aiTest").onclick = async () => {
+  updateAiStatus("Test en cours…");
+  try {
+    const r = await aiReview("Réponds en un seul mot : prêt ?");
+    updateAiStatus("Test réussi — " + r);
+  } catch (e) {
+    updateAiStatus("Échec : " + e.message);
+  }
+};
+$("#aiClear").onclick = () => {
+  localStorage.removeItem(AI_KEY);
+  fillAiForm();
+};
 
 /* ==================== THEME ==================== */
 
@@ -598,6 +711,7 @@ const linkCfg = setupFromLink();
 Sync.init().then(async () => {
   renderAll(todayKey());
   fillSyncForm();
+  fillAiForm();
   applyTheme();
   if (linkCfg && confirm("Configurer la synchronisation sur cet appareil ?")) {
     const r = await Sync.configure(linkCfg);

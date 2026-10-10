@@ -160,6 +160,14 @@
   .comment-item .cname { font-size: 13.5px; font-weight: 600; }
   .comment-item .ctext { font-size: 13px; color: var(--steps-ink); margin-top: 3px; line-height: 1.45; }
 
+  /* reponse IA */
+  .ai-box {
+    margin-top: 10px; font-size: 13px; line-height: 1.55; color: var(--steps-ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; white-space: pre-wrap;
+  }
+  .ai-box:empty { display: none; }
+
   /* ---------- theme sombre ---------- */
   /* Force depuis l'app (bouton Apparence) ou automatique selon le systeme. */
   :root[data-theme="dark"] {

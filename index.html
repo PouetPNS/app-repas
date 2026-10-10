@@ -85,6 +85,25 @@
       <p class="hint" id="syncStatus" style="margin:10px 0 0"></p>
     </div>
 
+    <div class="section-title">Relecture IA</div>
+    <div class="meal-form">
+      <p class="hint" style="margin-top:0">Clé d'API pour le bouton « Review IA » des recettes. Par défaut : Mistral
+        (clé gratuite sur <b>console.mistral.ai</b>, offre de découverte). La clé reste dans ce navigateur.
+        Tout point d'accès compatible OpenAI fonctionne.</p>
+      <label for="ai-key">Clé API</label>
+      <input type="password" id="ai-key" placeholder="Colle ta clé ici" autocomplete="off">
+      <label for="ai-url">Point d'accès (optionnel)</label>
+      <input type="text" id="ai-url" placeholder="https://api.mistral.ai/v1" autocomplete="off">
+      <label for="ai-model">Modèle (optionnel)</label>
+      <input type="text" id="ai-model" placeholder="mistral-small-latest" autocomplete="off">
+      <div class="toolbar">
+        <button class="btn good" id="aiSave">Enregistrer</button>
+        <button class="btn" id="aiTest">Tester</button>
+        <button class="btn badd" id="aiClear">Effacer</button>
+      </div>
+      <p class="hint" id="aiStatus" style="margin:10px 0 0"></p>
+    </div>
+
     <div class="section-title">Mes données</div>
     <p class="hint">Tout est stocké uniquement dans ce navigateur. Pense à exporter de temps en temps
       (les données disparaissent si tu vides l'historique du navigateur).</p>

@@ -95,14 +95,19 @@ préparation ») : remarques, idées, questions. Les commentaires sont synchroni
 appareils comme le reste, et les recettes commentées apparaissent dans l'onglet
 Historique, section « Commentaires à revoir ».
 
-Deux façons d'obtenir une relecture :
+Le bouton **« Review IA »** de la recette demande directement à une IA des suggestions
+(goût, équilibre, rapidité) en tenant compte de ton commentaire, et affiche la réponse
+dans la carte. Mise en place (une fois par appareil) :
 
-- **Bouton « Copier pour relecture IA »** (dans la recette) : copie un prompt prêt à
-  coller dans n'importe quel assistant IA (recette + ingrédients + ton commentaire).
-- **Relecture par un agent sur ton ordinateur** : ouvre une session avec l'agent sur
-  `~/Documents/app-repas`, donne-lui un jeton fine-grained en **lecture seule** sur le
-  dépôt `app-repas-data`, il récupère tes commentaires dans `data.json`, relit les
-  recettes concernées et modifie le catalogue (`js/data.js`). Révoque le jeton ensuite.
+1. Crée une clé API gratuite sur [console.mistral.ai](https://console.mistral.ai)
+   (offre de découverte, aucune carte bancaire).
+2. Dans l'app : onglet **Historique** → section **Relecture IA** → colle la clé →
+   **Enregistrer** → **Tester**.
+
+Le point d'accès et le modèle sont modifiables : tout service compatible OpenAI
+fonctionne. La clé est stockée uniquement dans le `localStorage` du navigateur.
+Le bouton **« Copier »** reste disponible pour coller la recette dans un chat IA
+manuellement.
 
 ## Modifier le catalogue des repas
 
