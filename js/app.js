@@ -167,6 +167,19 @@ function tagChips(tags) {
   return (tags || []).map(t => '<span class="tag">' + (NUTRI[t] || t) + "</span>").join("");
 }
 
+function buildReviewPrompt(m) {
+  const tags = (m.tags || []).map(t => NUTRI[t] || t).join(", ");
+  const ing = (m.ing || []).map(p => "- " + p[0] + (p[1] ? " : " + p[1] : "")).join("\n");
+  return "Voici une recette de mon application personnelle de repas végétariens. "
+    + "Propose des améliorations (goût, équilibre nutritionnel, rapidité) en tenant compte de mon commentaire.\n\n"
+    + "Recette : " + m.nom + "\n"
+    + "Temps de préparation : " + m.temps + " min\n"
+    + (tags ? "Apports visés : " + tags + "\n" : "")
+    + "Ingrédients :\n" + ing + "\n"
+    + (m.etapes ? "Étapes : " + m.etapes + "\n" : "")
+    + (m.comment ? "Mon commentaire : " + m.comment : "");
+}
+
 function mealCard(m, todayK) {
   const cov = coverage(state.history, todayK, 7);
   const missing = (m.tags || []).filter(t => cov[t] === 0);
@@ -175,12 +188,20 @@ function mealCard(m, todayK) {
   const div = document.createElement("div");
   div.className = "meal";
   div.innerHTML =
-    '<div class="meal-top"><h3></h3><span class="time">' + m.temps + " min</span></div>" +
+    '<div class="meal-top"><h3></h3><span class="time">' + m.temps + " min" + (m.comment ? " · note" : "") + "</span></div>" +
     '<div class="tags">' + tagChips(m.tags) + "</div>" +
     (bonus ? '<div class="bonus"></div>' : "") +
     '<details><summary>Ingrédients et préparation</summary>' +
       '<div class="ing"></div>' +
       (m.etapes ? '<div class="steps"></div>' : "") +
+      '<div class="comment-box">' +
+        '<div class="c-label">Mon commentaire (relecture IA possible)</div>' +
+        '<textarea class="comment-input" placeholder="Remarque, idée, question…"></textarea>' +
+        '<div class="c-actions">' +
+          '<button class="btn ghost" data-act="csave">Enregistrer</button>' +
+          '<button class="btn ghost" data-act="ccopy">Copier pour relecture IA</button>' +
+        "</div>" +
+      "</div>" +
     "</details>" +
     '<div class="actions">' +
       '<button class="btn badd" data-act="rate" data-r="0">Pas ouf</button>' +
@@ -194,6 +215,7 @@ function mealCard(m, todayK) {
   div.querySelector(".ing").style.whiteSpace = "pre-line";
   const stepsEl = div.querySelector(".steps");
   if (stepsEl && m.etapes) { stepsEl.textContent = m.etapes; }
+  div.querySelector(".comment-input").value = m.comment || "";
 
   div.addEventListener("click", e => {
     const btn = e.target.closest("button[data-act]");
@@ -202,6 +224,21 @@ function mealCard(m, todayK) {
       rateMeal(m.id, parseInt(btn.dataset.r, 10), todayK);
     } else if (btn.dataset.act === "shop") {
       addMealToShop(m, todayK);
+    } else if (btn.dataset.act === "csave") {
+      const v = div.querySelector(".comment-input").value.trim();
+      if (v) m.comment = v; else delete m.comment;
+      save();
+      renderAll(todayK);
+    } else if (btn.dataset.act === "ccopy") {
+      const v = div.querySelector(".comment-input").value.trim();
+      const target = v ? Object.assign({}, m, { comment: v }) : m;
+      navigator.clipboard.writeText(buildReviewPrompt(target)).then(
+        () => {
+          btn.textContent = "Copié !";
+          setTimeout(() => { btn.textContent = "Copier pour relecture IA"; }, 2000);
+        },
+        () => alert("Copie impossible dans ce contexte (ouvre l'app via son adresse web).")
+      );
     }
   });
   return div;
@@ -324,6 +361,22 @@ function renderHistory(todayK) {
   }
 }
 
+function renderComments() {
+  const box = $("#commentList");
+  if (!box) return;
+  const coms = state.meals.filter(m => m.comment);
+  if (!coms.length) { box.innerHTML = ""; return; }
+  box.innerHTML = '<div class="section-title">Commentaires à revoir</div>';
+  for (const c of coms) {
+    const div = document.createElement("div");
+    div.className = "comment-item";
+    div.innerHTML = '<div class="cname"></div><div class="ctext"></div>';
+    div.querySelector(".cname").textContent = c.nom;
+    div.querySelector(".ctext").textContent = c.comment;
+    box.appendChild(div);
+  }
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -347,6 +400,7 @@ function renderAll(todayK) {
   renderIdeas(todayK);
   renderShop(todayK);
   renderHistory(todayK);
+  renderComments();
   renderForm();
 }
 
@@ -420,12 +474,15 @@ $("#mealForm").addEventListener("submit", e => {
   const tags = Array.from(document.querySelectorAll("#f-tags input:checked")).map(i => i.value);
   const id = "custom-" + Date.now();
   state.custom.push(id);
-  state.meals.push({
+  const meal = {
     id: id, nom: name,
     temps: parseInt($("#f-time").value, 10) || 10,
     tags: tags, ing: ing.length ? ing : [["(ingrédients non précisés)", ""]],
     etapes: $("#f-steps").value.trim() || ""
-  });
+  };
+  const fComment = $("#f-comment").value.trim();
+  if (fComment) meal.comment = fComment;
+  state.meals.push(meal);
   save();
   $("#mealForm").reset();
   $("#f-time").value = 10;

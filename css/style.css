@@ -144,6 +144,22 @@
   .empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 26px 10px; line-height: 1.5; }
   h2.page { font-size: 17px; font-weight: 700; margin: 6px 0 4px; letter-spacing: -0.01em; }
 
+  /* commentaires de recette */
+  .comment-box { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  .comment-box .c-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .comment-box textarea {
+    width: 100%; min-height: 48px; resize: vertical;
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+    font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink);
+  }
+  .comment-box .c-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .comment-item {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 7px;
+  }
+  .comment-item .cname { font-size: 13.5px; font-weight: 600; }
+  .comment-item .ctext { font-size: 13px; color: var(--steps-ink); margin-top: 3px; line-height: 1.45; }
+
   /* ---------- theme sombre ---------- */
   /* Force depuis l'app (bouton Apparence) ou automatique selon le systeme. */
   :root[data-theme="dark"] {

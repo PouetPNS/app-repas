@@ -88,6 +88,22 @@ Option 1 — double-cliquer sur `index.html` (sync et installation désactivées
 Option 2 — VS Code : ouvrir ce dossier, puis avec l'extension **Live Server**, clic droit
 sur `index.html` > *Open with Live Server*.
 
+## Commentaires et relecture IA
+
+Chaque recette a un champ **« Mon commentaire »** (dans le dépliant « Ingrédients et
+préparation ») : remarques, idées, questions. Les commentaires sont synchronisés entre
+appareils comme le reste, et les recettes commentées apparaissent dans l'onglet
+Historique, section « Commentaires à revoir ».
+
+Deux façons d'obtenir une relecture :
+
+- **Bouton « Copier pour relecture IA »** (dans la recette) : copie un prompt prêt à
+  coller dans n'importe quel assistant IA (recette + ingrédients + ton commentaire).
+- **Relecture par un agent sur ton ordinateur** : ouvre une session avec l'agent sur
+  `~/Documents/app-repas`, donne-lui un jeton fine-grained en **lecture seule** sur le
+  dépôt `app-repas-data`, il récupère tes commentaires dans `data.json`, relit les
+  recettes concernées et modifie le catalogue (`js/data.js`). Révoque le jeton ensuite.
+
 ## Modifier le catalogue des repas
 
 Tout se passe dans `js/data.js` :
